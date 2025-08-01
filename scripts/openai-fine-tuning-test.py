@@ -7,7 +7,9 @@ import numpy as np
 import requests
 
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
-MODEL = "gpt-4.1-nano"
+MODEL = "ft:gpt-4.1-nano-2025-04-14:personal:nova-food-classifier-try1:BzrK8eVV"
+MODEL_DIR = "finetune"
+TRY = "try1"
 NUM_THREADS = 30
 
 
@@ -84,7 +86,7 @@ Your job is to identify a food product's NOVA classification, given its ingredie
 
 
 def worker(which, tasks):
-    with open(f"test-results/{MODEL}/thread-{which}.csv", "w") as file:
+    with open(f"test-results/{TRY}/{MODEL_DIR}/thread-{which}.csv", "w") as file:
         while True:
             task = tasks.get()
             if task is None:
