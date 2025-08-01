@@ -7,10 +7,10 @@ import numpy as np
 import requests
 
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
-MODEL = "ft:gpt-4.1-nano-2025-04-14:personal:nova-food-classifier-try1:BzrK8eVV"
-MODEL_DIR = "finetune"
-TRY = "try1"
-NUM_THREADS = 30
+MODEL = "gpt-4.1-nano"
+MODEL_DIR = "gpt-4.1-nano"
+TRY = "try3"
+NUM_THREADS = 20
 
 
 def probability_distribution(ingredients, countdown):

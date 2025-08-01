@@ -39,7 +39,7 @@ random.shuffle(dataset)
 message_format = '{{"messages":[{{"role":"user","content":{ingredients}}},{{"role":"assistant","content":"{{\\\"nova_group\\\":{nova_group}}}"}}]}}\n'
 
 with open("training.jsonl", "w") as file:
-    for row in dataset[: 4*SIZE]:
+    for row in dataset[: 11*SIZE]:
         file.write(
             message_format.format(
                 ingredients=json.dumps(row.ingredients_text),
@@ -48,7 +48,7 @@ with open("training.jsonl", "w") as file:
         )
 
 with open("validation.jsonl", "w") as file:
-    for row in dataset[4*SIZE : 8*SIZE]:
+    for row in dataset[11*SIZE : int(11.5*SIZE)]:
         file.write(
             message_format.format(
                 ingredients=json.dumps(row.ingredients_text),
@@ -57,7 +57,7 @@ with open("validation.jsonl", "w") as file:
         )
 
 with open("test.jsonl", "w") as file:
-    for row in dataset[8*SIZE :]:
+    for row in dataset[int(11.5*SIZE) :]:
         file.write(
             message_format.format(
                 ingredients=json.dumps(row.ingredients_text),
