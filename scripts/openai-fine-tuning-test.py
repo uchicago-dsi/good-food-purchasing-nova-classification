@@ -7,10 +7,10 @@ import numpy as np
 import requests
 
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
-MODEL = "ft:gpt-4.1-nano-2025-04-14:personal:nova-food-classifier-try5:Bzx0riJp"
-MODEL_DIR = "finetune"
+MODEL = "gpt-4.1-nano"
+MODEL_DIR = "gpt-4.1-nano"
 TRY = "try5"
-NUM_THREADS = 20
+NUM_THREADS = 100
 
 
 def probability_distribution(ingredients, countdown):
@@ -83,7 +83,7 @@ Your job is to identify a food product's NOVA classification, given its ingredie
 
 
 def worker(which, tasks):
-    with open(f"test-results/{TRY}/{MODEL_DIR}/thread-{which}.csv", "w") as file:
+    with open(f"test-results/{TRY}/{MODEL_DIR}/thread-more-{which}.csv", "w") as file:
         while True:
             task = tasks.get()
             if task is None:
@@ -100,7 +100,7 @@ def worker(which, tasks):
 
 
 tasks = queue.Queue()
-with open(f"{TRY}/test.jsonl") as file:
+with open(f"{TRY}/test-more.jsonl") as file:
     index = 0
     for line in file:
         user_message, assistant_message = json.loads(line)["messages"]

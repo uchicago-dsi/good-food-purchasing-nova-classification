@@ -25,8 +25,11 @@ random.shuffle(dataset3)
 dataset4 = list(dataset[dataset["nova_group"] == 4].itertuples())
 random.shuffle(dataset4)
 
-dataset = list(dataset1[0 : 3*SIZE] + dataset2[0 : 3*SIZE] + dataset3[0 : 3*SIZE] + dataset4[0 : 3*SIZE])
+dataset = dataset1[0 : 3*SIZE] + dataset2[0 : 3*SIZE] + dataset3[0 : 3*SIZE] + dataset4[0 : 3*SIZE]
 random.shuffle(dataset)
+
+dataset_more = dataset1[3*SIZE :] + dataset2[3*SIZE :] + dataset3[3*SIZE :] + dataset4[3*SIZE :]
+random.shuffle(dataset_more)
 
 # Encodings of desired outputs differ in only one token, the group integer.
 # Thus, we can use the "logprobs" of that one token to quantify probability.
@@ -58,6 +61,15 @@ with open("validation.jsonl", "w") as file:
 
 with open("test.jsonl", "w") as file:
     for row in dataset[int(11.5*SIZE) :]:
+        file.write(
+            message_format.format(
+                ingredients=json.dumps(row.sentence),
+                nova_group=int(row.nova_group),
+            )
+        )
+
+with open("test-more.jsonl", "w") as file:
+    for row in dataset_more:
         file.write(
             message_format.format(
                 ingredients=json.dumps(row.sentence),
