@@ -9,7 +9,7 @@ import requests
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 MODEL = "gpt-4.1-nano"
 MODEL_DIR = "gpt-4.1-nano"
-TRY = "try3"
+TRY = "try4"
 NUM_THREADS = 20
 
 
@@ -63,15 +63,12 @@ Your job is to identify a food product's NOVA classification, given its ingredie
         )
     except Exception:
         return probability_distribution(ingredients, countdown - 1)
+
     if response.status_code != 200:
         return probability_distribution(ingredients, countdown - 1)
 
     data = response.json()
     if len(data.get("choices", [])) != 1:
-        return probability_distribution(ingredients, countdown - 1)
-
-    whole_message = json.loads(data["choices"][0].get("message", {}).get("content", '{}'))
-    if whole_message.get("nova_group", 0) not in (1, 2, 3, 4):
         return probability_distribution(ingredients, countdown - 1)
 
     for token in data["choices"][0]["logprobs"]["content"]:
@@ -103,7 +100,7 @@ def worker(which, tasks):
 
 
 tasks = queue.Queue()
-with open("test.jsonl") as file:
+with open(f"{TRY}/test.jsonl") as file:
     index = 0
     for line in file:
         user_message, assistant_message = json.loads(line)["messages"]
