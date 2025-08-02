@@ -8,7 +8,7 @@ SIZE = 430
 dataset = pd.read_csv(
     "~/Box/dsi-core/11th-hour/good-food-purchasing/Filtered_OFF_with_sentences.csv",
     sep="\t",
-    usecols=["product_name", "nova_group", "ingredients_text"],
+    usecols=["nova_group", "sentence"],
 )
 
 random.seed(12345)
@@ -42,7 +42,7 @@ with open("training.jsonl", "w") as file:
     for row in dataset[: 11*SIZE]:
         file.write(
             message_format.format(
-                ingredients=json.dumps(f"{row.product_name} has the ingredients: {row.ingredients_text}"),
+                ingredients=json.dumps(row.sentence),
                 nova_group=int(row.nova_group),
             )
         )
@@ -51,7 +51,7 @@ with open("validation.jsonl", "w") as file:
     for row in dataset[11*SIZE : int(11.5*SIZE)]:
         file.write(
             message_format.format(
-                ingredients=json.dumps(f"{row.product_name} has the ingredients: {row.ingredients_text}"),
+                ingredients=json.dumps(row.sentence),
                 nova_group=int(row.nova_group),
             )
         )
@@ -60,7 +60,7 @@ with open("test.jsonl", "w") as file:
     for row in dataset[int(11.5*SIZE) :]:
         file.write(
             message_format.format(
-                ingredients=json.dumps(f"{row.product_name} has the ingredients: {row.ingredients_text}"),
+                ingredients=json.dumps(row.sentence),
                 nova_group=int(row.nova_group),
             )
         )

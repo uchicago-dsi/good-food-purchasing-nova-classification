@@ -9,7 +9,7 @@ import requests
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 MODEL = "gpt-4.1-nano"
 MODEL_DIR = "gpt-4.1-nano"
-TRY = "try4"
+TRY = "try5"
 NUM_THREADS = 20
 
 
