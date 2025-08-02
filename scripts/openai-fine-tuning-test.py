@@ -7,8 +7,8 @@ import numpy as np
 import requests
 
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
-MODEL = "gpt-4.1-nano"
-MODEL_DIR = "gpt-4.1-nano"
+MODEL = "ft:gpt-4.1-nano-2025-04-14:personal:nova-food-classifier-try5:Bzx0riJp"
+MODEL_DIR = "finetune"
 TRY = "try5"
 NUM_THREADS = 20
 
