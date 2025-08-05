@@ -3,8 +3,6 @@ import random
 
 import pandas as pd
 
-SIZE = 430
-
 dataset = pd.read_csv(
     "~/Box/dsi-core/11th-hour/good-food-purchasing/Filtered_OFF_with_sentences.csv",
     sep="\t",
@@ -25,11 +23,18 @@ random.shuffle(dataset3)
 dataset4 = list(dataset[dataset["nova_group"] == 4].itertuples())
 random.shuffle(dataset4)
 
-dataset = dataset1[0 : 3*SIZE] + dataset2[0 : 3*SIZE] + dataset3[0 : 3*SIZE] + dataset4[0 : 3*SIZE]
-random.shuffle(dataset)
+test = dataset1[0:100] + dataset2[0:100] + dataset3[0:100] + dataset4[0:100]
+random.shuffle(test)
 
-dataset_more = dataset1[3*SIZE :] + dataset2[3*SIZE :] + dataset3[3*SIZE :] + dataset4[3*SIZE :]
-random.shuffle(dataset_more)
+validation = dataset1[100:200] + dataset2[100:200] + dataset3[100:200] + dataset4[100:200]
+random.shuffle(validation)
+
+training2 = dataset2[200:] * 11
+training1 = dataset1[200 : 200 + len(training2)]
+training3 = dataset3[200 : 200 + len(training2)]
+training4 = dataset4[200 : 200 + len(training2)]
+training = training1 + training2 + training3 + training4
+random.shuffle(training)
 
 # Encodings of desired outputs differ in only one token, the group integer.
 # Thus, we can use the "logprobs" of that one token to quantify probability.
@@ -42,7 +47,7 @@ random.shuffle(dataset_more)
 message_format = '{{"messages":[{{"role":"user","content":{ingredients}}},{{"role":"assistant","content":"{{\\\"nova_group\\\":{nova_group}}}"}}]}}\n'
 
 with open("training.jsonl", "w") as file:
-    for row in dataset[: 11*SIZE]:
+    for row in training:
         file.write(
             message_format.format(
                 ingredients=json.dumps(row.sentence),
@@ -51,7 +56,7 @@ with open("training.jsonl", "w") as file:
         )
 
 with open("validation.jsonl", "w") as file:
-    for row in dataset[11*SIZE : int(11.5*SIZE)]:
+    for row in validation:
         file.write(
             message_format.format(
                 ingredients=json.dumps(row.sentence),
@@ -60,16 +65,7 @@ with open("validation.jsonl", "w") as file:
         )
 
 with open("test.jsonl", "w") as file:
-    for row in dataset[int(11.5*SIZE) :]:
-        file.write(
-            message_format.format(
-                ingredients=json.dumps(row.sentence),
-                nova_group=int(row.nova_group),
-            )
-        )
-
-with open("test-more.jsonl", "w") as file:
-    for row in dataset_more:
+    for row in test:
         file.write(
             message_format.format(
                 ingredients=json.dumps(row.sentence),
