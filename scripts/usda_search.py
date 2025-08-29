@@ -8,7 +8,6 @@ import json
 import os
 import re
 import sqlite3
-import sys
 
 import requests
 import numpy as np
@@ -52,7 +51,7 @@ def usda_matches(
 
     This use of a vector database for large-scale search followed by an LLM is similar to RAG.
 
-    ChatGPT is asked to provide `chatgpt_num_trials` responses. The `matching_score` for a given `vendor`, `brand`, `product` triple is the fraction of times ChatGPT responded with that particular triple. The `matching_score` can exceed 1.0 if a triple appears multiple times in the USDA dataset (possibly with different GTIN/UPC and/or ingredients).
+    ChatGPT is asked to provide `chatgpt_num_trials` responses. The `chatgpt_score` for a given `vendor`, `brand`, `product` triple is the fraction of times ChatGPT responded with that particular triple. The `chatgpt_score` can exceed 1.0 if a triple appears multiple times in the USDA dataset (possibly with different GTIN/UPC and/or ingredients).
 
     If you set `return_num_tokens` to True, this function returns a 2-tuple:
         * the normal list of output
@@ -114,12 +113,13 @@ Respond with JSON indicating the number `N` corresponding to the best match or `
             "n": chatgpt_num_trials,
         },
     )
+    response_json = response.json()
 
     best_indexes = [
         x
         for x in [
             json.loads(result["message"]["content"])["best"]
-            for result in response.json()["choices"]
+            for result in response_json["choices"]
         ]
         if x is not None
     ]
@@ -146,7 +146,8 @@ Respond with JSON indicating the number `N` corresponding to the best match or `
         seen.add(row[1:])
         out.append(
             {
-                "matching_score": score,
+                "encoding_similarity": similarities[row[0]],
+                "chatgpt_score": score,
                 "usda_index": row[0],
                 "gtin_upc": row[1],
                 "vendor": row[2],
@@ -156,4 +157,88 @@ Respond with JSON indicating the number `N` corresponding to the best match or `
             }
         )
 
-    return out
+    if return_num_tokens:
+        return out, {
+            "prompt_tokens": response_json["usage"]["prompt_tokens"],
+            "completion_tokens": response_json["usage"]["completion_tokens"],
+        }
+    else:
+        return out
+
+
+if __name__ == "__main__":
+    import pandas as pd
+    import csv
+    import sys
+    from tqdm import tqdm
+
+    start, stop = map(int, sys.argv[1:])
+
+    cgfp = pd.read_csv(
+        "~/Box/dsi-core/11th-hour/good-food-purchasing/CONFIDENTIAL_GFPP Product Attribute List_8.26.25.csv",
+        dtype=str,
+    ).iloc[start:stop]
+
+    with open(f"cgfp_usda_text_matches_{start}_{stop}.csv", "w") as file:
+        writer = csv.writer(file)
+
+        writer.writerow((
+            "cgfp_index",
+            "Product GTIN or UPC",
+            "Vendor",
+            "Brand Name",
+            "Product Type",
+            "Level of Processing",
+            "encoding_similarity",
+            "chatgpt_score",
+            "usda_index",
+            "usda_gtin_upc",
+            "usda_vendor",
+            "usda_brand",
+            "usda_product",
+            "usda_ingredients",
+        ))
+
+        for index, row in tqdm(cgfp.iterrows(), total=len(cgfp)):
+            gtin_upc = "" if not isinstance(row["Product GTIN or UPC"], str) else row["Product GTIN or UPC"]
+            cgfp_vendor = "" if not isinstance(row["Vendor"], str) else row["Vendor"]
+            cgfp_brand = "" if not isinstance(row["Brand Name"], str) else row["Brand Name"]
+            cgfp_product = "" if not isinstance(row["Product Type"], str) else row["Product Type"]
+            cgfp_nova = "" if not isinstance(row["Level of Processing"], str) else row["Level of Processing"]
+
+            try:
+                matches = usda_matches(
+                    cgfp_vendor,
+                    cgfp_brand,
+                    cgfp_product,
+                    embedding_threshold=0.6,
+                    chatgpt_model="gpt-4.1-mini",
+                    chatgpt_temperature=1.0,
+                    chatgpt_num_trials=10,
+                    return_num_tokens=False,
+                )
+            except Exception as err:
+                with open(f"failures/{index}", "w") as errfile:
+                    errfile.write(f"{type(err).__name__}: {str(err)}")
+                continue
+
+            for match in matches:
+                writer.writerow(
+                    (
+                        index,
+                        gtin_upc,
+                        cgfp_vendor,
+                        cgfp_brand,
+                        cgfp_product,
+                        cgfp_nova,
+                        match["encoding_similarity"],
+                        match["chatgpt_score"],
+                        match["usda_index"],
+                        match["gtin_upc"],
+                        match["vendor"],
+                        match["brand"],
+                        match["product"],
+                        match["ingredients"],
+                    )
+                )
+            file.flush()
