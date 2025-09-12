@@ -14,9 +14,9 @@ MODEL_DIR = "cgfp-name-to-nova-try2"
 NUM_THREADS = 30
 
 
-def probability_distribution(message, countdown):
+def probability_distribution(index, message, countdown):
     if countdown == 0:
-        raise Exception(f"failed on: {message}")
+        raise Exception(f"failed on {index = }")
     try:
         response = requests.post(
             "https://api.openai.com/v1/chat/completions",
@@ -61,14 +61,14 @@ Your job is to identify a food product's NOVA classification, given its vendor, 
             },
         )
     except Exception:
-        return probability_distribution(message, countdown - 1)
+        return probability_distribution(index, message, countdown - 1)
 
     if response.status_code != 200:
-        return probability_distribution(message, countdown - 1)
+        return probability_distribution(index, message, countdown - 1)
 
     data = response.json()
     if len(data.get("choices", [])) != 1:
-        return probability_distribution(message, countdown - 1)
+        return probability_distribution(index, message, countdown - 1)
 
     for token in data["choices"][0]["logprobs"]["content"]:
         if token["token"] in ("1", "2", "3", "4"):
@@ -78,7 +78,7 @@ Your job is to identify a food product's NOVA classification, given its vendor, 
                 if x["token"] in ("1", "2", "3", "4")
             }
 
-    return probability_distribution(message, countdown - 1)
+    return probability_distribution(index, message, countdown - 1)
 
 
 def worker(which, tasks):
@@ -88,7 +88,7 @@ def worker(which, tasks):
             row = tasks.get()
             if row is None:
                 break
-            distribution = probability_distribution(row["message"], 5)
+            distribution = probability_distribution(row["index"], row["message"], 5)
             for value in (1, 2, 3, 4):
                 if value not in distribution:
                     distribution[value] = 0
