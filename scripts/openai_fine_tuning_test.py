@@ -9,8 +9,8 @@ import pandas as pd
 import requests
 
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
-MODEL = "ft:gpt-4.1-nano-2025-04-14:u-chicago:cgfp-name-to-nova-try2:CEzMM3Qh"
-MODEL_DIR = "cgfp-name-to-nova-try2"
+MODEL = "ft:gpt-4.1-nano-2025-04-14:u-chicago:cgfp-name-and-category-to-nova-try1:CF5tkHcG"
+MODEL_DIR = "cgfp-name-and-category-to-nova-try1"
 NUM_THREADS = 30
 
 
@@ -30,7 +30,7 @@ def probability_distribution(index, message, countdown):
                     {
                         "role": "system",
                         "content": """
-Your job is to identify a food product's NOVA classification, given its vendor, brand name, and description, as one of the four following JSON objects (with no whitespace):
+Your job is to identify a food product's NOVA classification, given its vendor, brand name, description and category, as one of the four following JSON objects (with no whitespace):
 * `{"nova_group":1}` for unprocessed or minimally processed foods, containing only raw or crushed, chilled, frozen, or dried vegetables, meat, seafood, milk, seeds, or spices, etc., without added sweeteners or flavors.
 * `{"nova_group":2}` for processed culinary ingredients, such as vegetable oils, butter, lard, sugar, molasses, honey, or syrups, which can include anti-oxidants, salt, and added vitamins or minerals.
 * `{"nova_group":3}` for processed foods, such as canned or bottled vegetables and legumes in brine, salted or sugared nuts and seeds, salted, dried cured, or smoked meats and fish, canned fish (with or without preservatives), fruit in syrup (with or without added anti-oxidants), and freshly made unpackaged breads and cheeses.
@@ -88,6 +88,7 @@ def worker(which, tasks):
             row = tasks.get()
             if row is None:
                 break
+            print(row["index"])
             distribution = probability_distribution(row["index"], row["message"], 5)
             for value in (1, 2, 3, 4):
                 if value not in distribution:

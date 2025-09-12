@@ -34,6 +34,9 @@ df["message"] = (
     + df["Brand Name"].fillna("").str[:]
     + "\n"
     + df["Product Type"].fillna("").str[:]
+    + "\n("
+    + df["Food Product Category"].fillna("").str[:]
+    + ")"
 )
 df = df.drop(columns=["Processor", "Brand Name", "Product Type"])
 
