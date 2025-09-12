@@ -1,25 +1,22 @@
-import os
+import csv
 import json
-import threading
+import os
 import queue
+import threading
 
 import numpy as np
+import pandas as pd
 import requests
 
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
-MODEL = "gpt-4.1-nano"
-MODEL_DIR = "gpt-4.1-nano"
+MODEL = "ft:gpt-4.1-nano-2025-04-14:u-chicago:cgfp-name-to-nova-try2:CEzMM3Qh"
+MODEL_DIR = "cgfp-name-to-nova-try2"
 NUM_THREADS = 30
 
 
-def probability_distribution(ingredients, countdown):
-    # * `{"nova_group":1}` for unprocessed or minimally processed foods, containing only raw or crushed, chilled, frozen, or dried vegetables, meat, seafood, milk, seeds, or spices, etc., without added sweeteners or flavors.
-    # * `{"nova_group":2}` for processed culinary ingredients, such as vegetable oils, butter, lard, sugar, molasses, honey, or syrups, which can include anti-oxidants, salt, and added vitamins or minerals.
-    # * `{"nova_group":3}` for processed foods such as canned or bottled vegetables and legumes in brine, salted or sugared nuts and seeds, salted, dried cured, or smoked meats and fish, canned fish (with or without preservatives), fruit in syrup (with or without added anti-oxidants), and freshly made unpackaged breads and cheeses.
-    # * `{"nova_group":4}` for ultra-processed foods, often ready-to-consume products like carbonated soft drinks, sweet or savory packaged snacks, candies, ice cream, mass-produced breads, margarines and other spreads, cookies, pastries, breakfast cereals, energy bars, energy drinks, instant sauces, ready-to-heat pasta and pizzas, pultry and fish "nuggets" or "sticks", sausages, burgers, hot dogs, infant formulas, health and "slimming" products such as meal-replacement shakes and powders.
-
+def probability_distribution(message, countdown):
     if countdown == 0:
-        raise Exception(f"failed on: {ingredients}")
+        raise Exception(f"failed on: {message}")
     try:
         response = requests.post(
             "https://api.openai.com/v1/chat/completions",
@@ -30,14 +27,17 @@ def probability_distribution(ingredients, countdown):
             json={
                 "model": MODEL,
                 "messages": [
-                    {"role": "system", "content": """
-Your job is to identify a food product's NOVA classification, given its ingredient lists, as one of the four following JSON objects (with no whitespace):
-* `{"nova_group":1}` for unprocessed or minimally processed foods
-* `{"nova_group":2}` for processed culinary ingredients
-* `{"nova_group":3}` for processed foods
-* `{"nova_group":4}` for ultra-processed foods
-""".strip()},
-                    {"role": "user", "content": ingredients},
+                    {
+                        "role": "system",
+                        "content": """
+Your job is to identify a food product's NOVA classification, given its vendor, brand name, and description, as one of the four following JSON objects (with no whitespace):
+* `{"nova_group":1}` for unprocessed or minimally processed foods, containing only raw or crushed, chilled, frozen, or dried vegetables, meat, seafood, milk, seeds, or spices, etc., without added sweeteners or flavors.
+* `{"nova_group":2}` for processed culinary ingredients, such as vegetable oils, butter, lard, sugar, molasses, honey, or syrups, which can include anti-oxidants, salt, and added vitamins or minerals.
+* `{"nova_group":3}` for processed foods, such as canned or bottled vegetables and legumes in brine, salted or sugared nuts and seeds, salted, dried cured, or smoked meats and fish, canned fish (with or without preservatives), fruit in syrup (with or without added anti-oxidants), and freshly made unpackaged breads and cheeses.
+* `{"nova_group":4}` for ultra-processed foods, often ready-to-consume products like carbonated soft drinks, sweet or savory packaged snacks, candies, ice cream, mass-produced breads, margarines and other spreads, cookies, pastries, breakfast cereals, energy bars, energy drinks, instant sauces, ready-to-heat pasta and pizzas, pultry and fish "nuggets" or "sticks", sausages, burgers, hot dogs, infant formulas, health and "slimming" products such as meal-replacement shakes and powders.
+""".strip(),
+                    },
+                    {"role": "user", "content": message},
                 ],
                 "response_format": {
                     "type": "json_schema",
@@ -61,14 +61,14 @@ Your job is to identify a food product's NOVA classification, given its ingredie
             },
         )
     except Exception:
-        return probability_distribution(ingredients, countdown - 1)
+        return probability_distribution(message, countdown - 1)
 
     if response.status_code != 200:
-        return probability_distribution(ingredients, countdown - 1)
+        return probability_distribution(message, countdown - 1)
 
     data = response.json()
     if len(data.get("choices", [])) != 1:
-        return probability_distribution(ingredients, countdown - 1)
+        return probability_distribution(message, countdown - 1)
 
     for token in data["choices"][0]["logprobs"]["content"]:
         if token["token"] in ("1", "2", "3", "4"):
@@ -78,35 +78,40 @@ Your job is to identify a food product's NOVA classification, given its ingredie
                 if x["token"] in ("1", "2", "3", "4")
             }
 
-    return probability_distribution(ingredients, countdown - 1)
+    return probability_distribution(message, countdown - 1)
 
 
 def worker(which, tasks):
     with open(f"test-results/{MODEL_DIR}/thread-{which}.csv", "w") as file:
+        writer = csv.writer(file)
         while True:
-            task = tasks.get()
-            if task is None:
+            row = tasks.get()
+            if row is None:
                 break
-            index, ingredients, truth = task
-            distribution = probability_distribution(ingredients, 5)
+            distribution = probability_distribution(row["message"], 5)
             for value in (1, 2, 3, 4):
                 if value not in distribution:
                     distribution[value] = 0
-            file.write(
-                f"{index},{distribution[1]},{distribution[2]},{distribution[3]},{distribution[4]},{truth}\n"
+            writer.writerow(
+                (
+                    row["index"],
+                    row["Food Product Category"],
+                    row["Primary Food Product Category"],
+                    row["Level of Processing"],
+                    row["message"],
+                    distribution[1],
+                    distribution[2],
+                    distribution[3],
+                    distribution[4],
+                )
             )
             file.flush()
 
 
 tasks = queue.Queue()
-with open(f"test.jsonl") as file:
-    index = 0
-    for line in file:
-        user_message, assistant_message = json.loads(line)["messages"]
-        tasks.put(
-            (index, user_message["content"], json.loads(assistant_message["content"])["nova_group"])
-        )
-        index += 1
+df = pd.read_csv("cgfp-test.csv", dtype=str)
+for _, row in df.iterrows():
+    tasks.put(row)
 
 for _ in range(NUM_THREADS):
     tasks.put(None)
