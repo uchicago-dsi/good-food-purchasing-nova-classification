@@ -27,7 +27,7 @@ def get_token():
             algorithm="RS256",
         )
         response = requests.post(
-            f"https://api.github.com/app/installations/{INSTALLATION_ID}/access_tokens"
+            f"https://api.github.com/app/installations/{INSTALLATION_ID}/access_tokens",
             headers={
                 "Authorization": f"Bearer {current_jwt}",
                 "Accept": "application/vnd.github+json",
@@ -45,7 +45,7 @@ def write_comment(text):
             "Accept": "application/vnd.github+json",
         },
         json={
-        "query": """
+            "query": """
 mutation AddDiscussionComment {
   addDiscussionComment(input: {
     discussionId: "%s",
@@ -57,7 +57,9 @@ mutation AddDiscussionComment {
 """ % (DISCUSSION_ID, text)
         },
     )
-    print(f"write_comment {response.status_code = } {response.headers = } {response.text = }")
+    print(
+        f"write_comment {response.status_code = } {response.headers = } {response.text = }"
+    )
 
 
 write_comment("Why, hello there!")
