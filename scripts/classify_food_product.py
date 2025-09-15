@@ -13,6 +13,7 @@ APP_CLIENT_ID = os.environ["APP_CLIENT_ID"]
 DISCUSSION_BODY = os.environ["DISCUSSION_BODY"]
 DISCUSSION_ID = os.environ["DISCUSSION_ID"]
 
+jwt_instance = jwt.JWT()
 current_token = None
 expiration = 0
 
@@ -23,7 +24,7 @@ def get_token():
     now = int(time.time())
     if now >= expiration - 1:
         expiration = now + 600
-        current_jwt = jwt.encode(
+        current_jwt = jwt_instance.encode(
             {"iat": now, "exp": expiration, "iss": APP_CLIENT_ID},
             APP_PRIVATE_KEY.encode(),
             algorithm="RS256",
