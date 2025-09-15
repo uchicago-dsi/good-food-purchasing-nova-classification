@@ -26,7 +26,7 @@ def get_token():
         expiration = now + 600
         current_jwt = jwt_instance.encode(
             {"iat": now, "exp": expiration, "iss": APP_CLIENT_ID},
-            APP_PRIVATE_KEY.encode(),
+            jwt.jwk_from_pem(APP_PRIVATE_KEY.encode()),
             alg="RS256",
         )
         response = requests.post(
