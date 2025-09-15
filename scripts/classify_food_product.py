@@ -23,11 +23,13 @@ MODEL = "ft:gpt-4.1-nano-2025-04-14:u-chicago:cgfp-name-to-nova-try2:CEzMM3Qh"
 NUM_CHATGPT_RETRIES = 5
 
 jwt_instance = jwt.JWT()
+current_jwt = None
 current_token = None
 expiration = 0
 
 
 def get_token():
+    global current_jwt
     global current_token
     global expiration
     now = int(time.time())
@@ -46,6 +48,7 @@ def get_token():
             },
         )
         current_token = response.json().get("token")
+
     return current_token
 
 
@@ -157,44 +160,31 @@ class Tee(io.StringIO):
 
 
 if __name__ == "__main__":
-    m = re.search(
-        r"\[[^]]*\]\((https://github.com/user-attachments/[^)]+\.csv)\)",
-        DISCUSSION_BODY,
-    )
+    m = re.search(r"```csv\n([\s\S]*)\n```", DISCUSSION_BODY)
     if m is None:
         write_comment(
-            f"You need to attach a CSV file in your message. [Create a new discussion]({NEW_DISCUSSION_URL}) and drag a CSV file into it or click on the button below the message to choose a file."
+            f"""You need to include CSV data in your message, fenced with triple backticks and labeled as `csv`, like this:
+
+````
+```csv
+Processor,Brand Name,Product Type
+... lots of data ...
+```
+````
+
+[Create a new discussion]({NEW_DISCUSSION_URL}) and include the CSV data."""
         )
         sys.exit()
 
-    attachment_url = m.group(1)
-    print(f"Getting CSV data from {attachment_url}")
+    csv_data = m.group(1)
 
     try:
-        response = requests.get(
-            attachment_url,
-            headers={
-                "Authorization": f"token {get_token()}",
-                "Accept": "application/vnd.github+json",
-            },
-        )
-    except Exception as err:
-        write_comment(
-            f"Attempted to get [{attachment_url}]({attachment_url}), but it failed to fetch with {type(err).__name__}: {str(err)}\n\nIf you know how to fix this error, do so [in a new discussion]({NEW_DISCUSSION_URL})."
-        )
-        sys.exit()
-
-    print(f"CSV content is {response.content}")
-
-    try:
-        df = pd.read_csv(io.BytesIO(response.content), dtype=str)
+        df = pd.read_csv(io.StringIO(csv_data), dtype=str)
     except Exception as err:
         write_comment(
             f"Attempted to read [{attachment_url}]({attachment_url}), but Pandas failed to read it with {type(err).__name__}: {str(err)}\n\nIf you know how to fix this error, do so [in a new discussion]({NEW_DISCUSSION_URL})."
         )
         sys.exit()
-
-    print(f"Columns in Pandas are {df.columns}")
 
     needs = []
     for column in ("Processor", "Brand Name", "Product Type"):
