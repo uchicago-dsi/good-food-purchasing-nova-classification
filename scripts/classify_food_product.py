@@ -160,7 +160,7 @@ class Tee(io.StringIO):
 
 
 if __name__ == "__main__":
-    m = re.search(r"```csv\n([\s\S]*)\n```", DISCUSSION_BODY)
+    m = re.search(r"```csv\r?\n(.*)\r?\n```", DISCUSSION_BODY, re.M | re.DOTALL)
     if m is None:
         write_comment(
             f"""You need to include CSV data in your message, fenced with triple backticks and labeled as `csv`, like this:
