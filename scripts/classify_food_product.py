@@ -171,7 +171,13 @@ if __name__ == "__main__":
     print(f"Getting CSV data from {attachment_url}")
 
     try:
-        response = requests.get(attachment_url)
+        response = requests.get(
+            attachment_url,
+            headers={
+                "Authorization": f"token {get_token()}",
+                "Accept": "application/vnd.github+json",
+            },
+        )
     except Exception as err:
         write_comment(
             f"Attempted to get [{attachment_url}]({attachment_url}), but it failed to fetch with {type(err).__name__}: {str(err)}\n\nIf you know how to fix this error, do so [in a new discussion]({NEW_DISCUSSION_URL})."
