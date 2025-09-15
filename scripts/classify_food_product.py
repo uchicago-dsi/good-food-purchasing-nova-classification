@@ -191,7 +191,7 @@ if __name__ == "__main__":
             needs.append(column)
     if len(needs) != 0:
         write_comment(
-            f"The following columns are missing: {', '.join(f'`{x}`' for x in needs)} (case-sensitive). Fix the CSV file and upload it [in a new discussion]({NEW_DISCUSSION_URL})."
+            f"The following columns are missing: {', '.join(f'`{x}`' for x in needs)} (case-sensitive); found the following columns: {', '.join(f'`{x}`' for x in df.columns)}. Fix the CSV file and upload it [in a new discussion]({NEW_DISCUSSION_URL})."
         )
         sys.exit()
 
