@@ -147,12 +147,12 @@ class Tee(io.StringIO):
     #     self.file.close()
 
     def __enter__(self):
-        pass
         # return self.file.__enter__()
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        pass
         # return self.file.__exit__(self, exc_type, exc_value, traceback)
+        return self
 
     def write(self, data):
         super().write(data)
