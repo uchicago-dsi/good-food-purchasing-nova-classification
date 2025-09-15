@@ -1,0 +1,36 @@
+name: classify-food-product
+
+on:
+  discussion:
+    types: [created]
+
+jobs:
+  classify-food-product:
+    name: classify-food-product
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Git checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install jwt requests
+
+      - name: Respond
+        shell: bash
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          APP_PRIVATE_KEY: ${{ APP_PRIVATE_KEY }}
+          DISCUSSION_BODY: ${{ github.event.discussion.body }}
+          DISCUSSION_ID: ${{ github.event.discussion.node_id }}
+        run: |
+          python scripts/classify_food_product.py
