@@ -27,7 +27,7 @@ def get_token():
         current_jwt = jwt_instance.encode(
             {"iat": now, "exp": expiration, "iss": APP_CLIENT_ID},
             APP_PRIVATE_KEY.encode(),
-            algorithm="RS256",
+            alg="RS256",
         )
         response = requests.post(
             f"https://api.github.com/app/installations/{INSTALLATION_ID}/access_tokens",
