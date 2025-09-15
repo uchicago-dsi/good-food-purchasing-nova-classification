@@ -18,6 +18,8 @@ expiration = 0
 
 
 def get_token():
+    global current_token
+    global expiration
     now = int(time.time())
     if now >= expiration - 1:
         expiration = now + 600
