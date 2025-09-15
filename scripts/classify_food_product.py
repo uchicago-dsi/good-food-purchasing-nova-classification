@@ -213,7 +213,7 @@ Processor,Brand Name,Product Type
         failures = []
         for index, row in df.iterrows():
             try:
-                result = chatgpt_response(index, row("message"), NUM_CHATGPT_RETRIES)
+                result = chatgpt_response(index, row["message"], NUM_CHATGPT_RETRIES)
             except ChatGPTError as err:
                 failures.append(err.index)
             except Exception as err:
@@ -225,9 +225,9 @@ Processor,Brand Name,Product Type
             out.writerow(
                 [
                     index,
-                    row("Processor"),
-                    row("Brand Name"),
-                    row("Product Type"),
+                    row["Processor"],
+                    row["Brand Name"],
+                    row["Product Type"],
                     result,
                 ]
             )
