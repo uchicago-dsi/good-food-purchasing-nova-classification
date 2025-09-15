@@ -64,13 +64,13 @@ def write_comment(text):
 mutation AddDiscussionComment {
   addDiscussionComment(input: {
     discussionId: "%s",
-    body: "%s"
+    body: %s
   }) {
     comment { id }
   }
 }
 """
-            % (DISCUSSION_ID, text)
+            % (DISCUSSION_ID, json.dumps(text))
         },
     )
     print(f"write_comment {response.status_code = } {response.text = }")
@@ -157,6 +157,7 @@ class Tee(io.StringIO):
     def write(self, data):
         super().write(data)
         print(data, end="")
+        sys.stdout.flush()
 
 
 if __name__ == "__main__":
