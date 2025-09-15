@@ -226,9 +226,13 @@ Processor,Brand Name,Product Type
             out.writerow(
                 [
                     index,
-                    row["Processor"],
-                    row["Brand Name"],
-                    row["Product Type"],
+                    "" if not isinstance(row["Processor"], str) else row["Processor"],
+                    "" if not isinstance(row["Brand Name"], str) else row["Brand Name"],
+                    (
+                        ""
+                        if not isinstance(row["Product Type"], str)
+                        else row["Product Type"]
+                    ),
                     result,
                 ]
             )
