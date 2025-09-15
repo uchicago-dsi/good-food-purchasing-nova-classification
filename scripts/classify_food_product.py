@@ -168,6 +168,7 @@ if __name__ == "__main__":
         sys.exit()
 
     attachment_url = m.group(1)
+    print(f"Getting CSV data from {attachment_url}")
 
     try:
         response = requests.get(attachment_url)
@@ -177,6 +178,8 @@ if __name__ == "__main__":
         )
         sys.exit()
 
+    print(f"CSV content is {response.content}")
+
     try:
         df = pd.read_csv(io.BytesIO(response.content), dtype=str)
     except Exception as err:
@@ -184,6 +187,8 @@ if __name__ == "__main__":
             f"Attempted to read [{attachment_url}]({attachment_url}), but Pandas failed to read it with {type(err).__name__}: {str(err)}\n\nIf you know how to fix this error, do so [in a new discussion]({NEW_DISCUSSION_URL})."
         )
         sys.exit()
+
+    print(f"Columns in Pandas are {df.columns}")
 
     needs = []
     for column in ("Processor", "Brand Name", "Product Type"):
