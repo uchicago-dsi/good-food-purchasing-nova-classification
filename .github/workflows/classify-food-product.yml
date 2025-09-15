@@ -30,6 +30,7 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
           DISCUSSION_BODY: ${{ github.event.discussion.body }}
           DISCUSSION_ID: ${{ github.event.discussion.node_id }}
         run: |
