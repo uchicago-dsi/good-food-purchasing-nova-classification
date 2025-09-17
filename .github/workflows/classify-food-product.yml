@@ -23,7 +23,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install jwt requests pandas
+          python -m pip install -r ghaction-requirements.txt
 
       - name: Respond
         shell: bash

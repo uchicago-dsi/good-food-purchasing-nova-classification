@@ -161,26 +161,26 @@ class Tee(io.StringIO):
 
 
 if __name__ == "__main__":
-    m = re.search(r"```csv\r?\n(.*)\r?\n```", DISCUSSION_BODY, re.M | re.DOTALL)
+    m = re.search(r"```\r?\n(.*)\r?\n```", DISCUSSION_BODY, re.M | re.DOTALL)
     if m is None:
         write_comment(
-            f"""You need to include CSV data in your message, fenced with triple backticks and labeled as `csv`, like this:
+            f"""You need to include tab-separated data in your message, fenced with triple backticks, like this:
 
 ````
-```csv
-Processor,Brand Name,Product Type
+```
+Processor	Brand Name	Product Type
 ... lots of data ...
 ```
 ````
 
-[Create a new discussion]({NEW_DISCUSSION_URL}) and include the CSV data."""
+[Create a new discussion]({NEW_DISCUSSION_URL}) and include the tab-separated data."""
         )
         sys.exit()
 
     csv_data = m.group(1)
 
     try:
-        df = pd.read_csv(io.StringIO(csv_data), dtype=str)
+        df = pd.read_csv(io.StringIO(csv_data), dtype=str, sep="\t")
     except Exception as err:
         write_comment(
             f"Attempted to read [{attachment_url}]({attachment_url}), but Pandas failed to read it with {type(err).__name__}: {str(err)}\n\nIf you know how to fix this error, do so [in a new discussion]({NEW_DISCUSSION_URL})."
