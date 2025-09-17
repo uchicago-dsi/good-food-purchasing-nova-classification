@@ -206,7 +206,7 @@ Processor	Brand Name	Product Type
     )
 
     with Tee() as file:
-        out = csv.writer(file)
+        out = csv.writer(file, delimiter="\t")
         out.writerow(
             ["index", "Processor", "Brand Name", "Product Type", "nova_from_chatgpt"]
         )
