@@ -170,7 +170,7 @@ Processor	Brand Name	Product Type
         df = pd.read_csv(io.StringIO(csv_data), dtype=str, sep="\t")
     except Exception as err:
         write_comment(
-            f"Attempted to read [{attachment_url}]({attachment_url}), but Pandas failed to read it with {type(err).__name__}: {str(err)}\n\nIf you know how to fix this error, do so [in a new discussion]({NEW_DISCUSSION_URL})."
+            f"Attempted to read text in brackets as CSV, but Pandas failed to read it with {type(err).__name__}: {str(err)}\n\nIf you know how to fix this error, do so [in a new discussion]({NEW_DISCUSSION_URL})."
         )
         sys.exit()
 
@@ -184,6 +184,10 @@ Processor	Brand Name	Product Type
         )
         sys.exit()
 
+    dfout = df.copy()
+    dfout["nova_from_chatgpt"] = np.nan
+    dfout["nova_from_chatgpt"] = dfout["nova_from_chatgpt"].astype(object)
+
     df["message"] = (
         df["Processor"].fillna("").str[:]
         + "\n"
@@ -196,10 +200,7 @@ Processor	Brand Name	Product Type
     out.writerow(
         ["index", "Processor", "Brand Name", "Product Type", "nova_from_chatgpt"]
     )
-
-    dfout = df.copy()
-    dfout["nova_from_chatgpt"] = np.nan
-    dfout["nova_from_chatgpt"] = dfout["nova_from_chatgpt"].astype(object)
+    sys.stdout.flush()
 
     failures = []
     for index, row in df.iterrows():
@@ -226,6 +227,7 @@ Processor	Brand Name	Product Type
                 result,
             ]
         )
+        sys.stdout.flush()
         dfout.loc[index, "nova_from_chatgpt"] = NOVA_NAMES.get(result, result)
 
     if len(failures) != 0:
@@ -234,7 +236,7 @@ Processor	Brand Name	Product Type
         preamble = ""
 
     ascsv = io.StringIO()
-    dfout.to_csv(ascsv, index=False)
+    dfout.to_csv(ascsv, index=False, sep="\t")
     write_comment(
         f"""{preamble}Here's your data with NOVA scores from ChatGPT:
 
