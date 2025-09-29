@@ -9,6 +9,7 @@ import time
 import jwt
 import requests
 import pandas as pd
+import numpy as np
 
 INSTALLATION_ID = "86079416"
 
@@ -21,6 +22,13 @@ DISCUSSION_ID = os.environ["DISCUSSION_ID"]
 NEW_DISCUSSION_URL = "https://github.com/uchicago-dsi/good-food-purchasing-nova-classification/discussions/new?category=classify-food-product"
 MODEL = "ft:gpt-4.1-nano-2025-04-14:u-chicago:cgfp-name-to-nova-try2:CEzMM3Qh"
 NUM_CHATGPT_RETRIES = 5
+
+NOVA_NAMES = {
+    1: "Whole/Minimally Processed",
+    2: "Culinary Ingredient",
+    3: "Moderately Processed",
+    4: "Ultra-Processed",
+}
 
 jwt_instance = jwt.JWT()
 current_jwt = None
@@ -139,27 +147,6 @@ Your job is to identify a food product's NOVA classification, given its vendor, 
         return chatgpt_response(index, message, countdown - 1)
 
 
-class Tee(io.StringIO):
-    # def __init__(self, filename):
-    #     self.file = open(filename, "w")
-
-    # def close(self):
-    #     self.file.close()
-
-    def __enter__(self):
-        # return self.file.__enter__()
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        # return self.file.__exit__(self, exc_type, exc_value, traceback)
-        return self
-
-    def write(self, data):
-        super().write(data)
-        print(data, end="")
-        sys.stdout.flush()
-
-
 if __name__ == "__main__":
     m = re.search(r"```\r?\n(.*)\r?\n```", DISCUSSION_BODY, re.M | re.DOTALL)
     if m is None:
@@ -205,47 +192,53 @@ Processor	Brand Name	Product Type
         + df["Product Type"].fillna("").str[:]
     )
 
-    with Tee() as file:
-        out = csv.writer(file, delimiter="\t")
-        out.writerow(
-            ["index", "Processor", "Brand Name", "Product Type", "nova_from_chatgpt"]
-        )
+    out = csv.writer(sys.stdout, delimiter="\t")
+    out.writerow(
+        ["index", "Processor", "Brand Name", "Product Type", "nova_from_chatgpt"]
+    )
 
-        failures = []
-        for index, row in df.iterrows():
-            try:
-                result = chatgpt_response(index, row["message"], NUM_CHATGPT_RETRIES)
-            except ChatGPTError as err:
-                failures.append(err.index)
-            except Exception as err:
-                write_comment(
-                    f"During processing, we encountered {type(err).__name__}: {str(err)}\n\nIf you know how to fix this error, do so [in a new discussion]({NEW_DISCUSSION_URL})."
-                )
-                sys.exit()
+    dfout = df.copy()
+    dfout["nova_from_chatgpt"] = np.nan
+    dfout["nova_from_chatgpt"] = dfout["nova_from_chatgpt"].astype(object)
 
-            out.writerow(
-                [
-                    index,
-                    "" if not isinstance(row["Processor"], str) else row["Processor"],
-                    "" if not isinstance(row["Brand Name"], str) else row["Brand Name"],
-                    (
-                        ""
-                        if not isinstance(row["Product Type"], str)
-                        else row["Product Type"]
-                    ),
-                    result,
-                ]
+    failures = []
+    for index, row in df.iterrows():
+        try:
+            result = chatgpt_response(index, row["message"], NUM_CHATGPT_RETRIES)
+        except ChatGPTError as err:
+            failures.append(err.index)
+        except Exception as err:
+            write_comment(
+                f"During processing, we encountered {type(err).__name__}: {str(err)}\n\nIf you know how to fix this error, do so [in a new discussion]({NEW_DISCUSSION_URL})."
             )
+            sys.exit()
 
-        if len(failures) != 0:
-            preamble = f"The following indexes (first row is zero) failed to be processed (likely a timeout when connecting to ChatGPT): {', '.join(map(str, failures))}\n\n"
-        else:
-            preamble = ""
+        out.writerow(
+            [
+                index,
+                "" if not isinstance(row["Processor"], str) else row["Processor"],
+                "" if not isinstance(row["Brand Name"], str) else row["Brand Name"],
+                (
+                    ""
+                    if not isinstance(row["Product Type"], str)
+                    else row["Product Type"]
+                ),
+                result,
+            ]
+        )
+        dfout.loc[index, "nova_from_chatgpt"] = NOVA_NAMES.get(result, result)
 
-        write_comment(
-            f"""{preamble}Here's your data with NOVA scores from ChatGPT:
+    if len(failures) != 0:
+        preamble = f"The following indexes (first row is zero) failed to be processed (likely a timeout when connecting to ChatGPT): {', '.join(map(str, failures))}\n\n"
+    else:
+        preamble = ""
+
+    ascsv = io.StringIO()
+    dfout.to_csv(ascsv, index=False)
+    write_comment(
+        f"""{preamble}Here's your data with NOVA scores from ChatGPT:
 
 ```csv
-{file.getvalue()}```
+{ascsv.getvalue()}```
 """
         )
